@@ -7,7 +7,7 @@
 import { useEffect, useRef } from 'react';
 import { gameWorld } from '@/core/engine/GameWorld';
 import { eventSystem } from '@/core/systems/EventSystem';
-import type { IslandData } from '@/core/systems/WorldGeneration';
+import type { IslandData } from '@/core/systems/ChunkManager';
 
 interface MinimapProps {
   islands: IslandData[];

@@ -5,13 +5,14 @@
  * A/D = rudder (turn left/right).
  */
 
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { gameWorld } from '@/core/engine/GameWorld';
 import { inputManager } from '@/core/engine/InputManager';
 import { useUpgradeStore } from '@/stores/upgradeStore';
 import { useUIStore } from '@/stores/uiStore';
+import { fishingSystem } from '@/core/systems/FishingSystem';
 
 interface ShipControllerProps {
   children: React.ReactNode;
@@ -19,6 +20,21 @@ interface ShipControllerProps {
 
 export const ShipController = forwardRef<THREE.Group, ShipControllerProps>(({ children }, ref) => {
   const groupRef = useRef<THREE.Group>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (useUIStore.getState().isPaused || useUIStore.getState().isDocked) return;
+      
+      if (e.code === 'KeyR') {
+        fishingSystem.cast();
+      } else if (e.code === 'Space') {
+        fishingSystem.reel();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const physics = gameWorld.shipPhysics;
   const buoyancy = gameWorld.buoyancySystem;

@@ -8,6 +8,7 @@ import { useUpgradeStore } from '@/stores/upgradeStore';
 import { useGameStore } from '@/stores/gameStore';
 import { UpgradeSystem, UPGRADE_COSTS } from '@/core/systems/UpgradeSystem';
 import { type UpgradeType } from '@/stores/upgradeStore';
+import { ShipyardVisualsPanel } from './ShipyardVisualsPanel';
 
 export function UpgradeShop() {
   const isOpen = useUpgradeStore((s) => s.isShopOpen);
@@ -92,7 +93,7 @@ export function UpgradeShop() {
             );
           })}
         </div>
-        
+        <ShipyardVisualsPanel />
         <p className="text-center text-xs text-sand-light/40">Press <span className="text-yellow-200 font-bold">U</span> or <span className="text-yellow-200 font-bold">ESC</span> to close</p>
       </div>
     </div>

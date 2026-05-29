@@ -8,6 +8,8 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ShipPhysics } from '@/core/physics/ShipPhysics';
+import { crewManager } from '@/core/systems/CrewManager';
+import { fishingSystem } from '@/core/systems/FishingSystem';
 
 interface ShipControllerProps {
   children: React.ReactNode;
@@ -46,6 +48,12 @@ export const ShipController = forwardRef<THREE.Group, ShipControllerProps>(({ ch
         case 'KeyD':
         case 'ArrowRight':
           inputRef.current.right = true;
+          break;
+        case 'KeyR':
+          fishingSystem.cast();
+          break;
+        case 'Space':
+          fishingSystem.reel();
           break;
       }
     };
@@ -95,6 +103,9 @@ export const ShipController = forwardRef<THREE.Group, ShipControllerProps>(({ ch
     
     physics.throttle = throttle;
     physics.rudder = rudder;
+    // Apply Crew Modifiers
+    const mods = crewManager.getModifiers();
+    physics.throttle *= mods.speedMult;
     
     // 2. Step the physics simulation
     // Clamp delta to prevent physics explosions on lag spikes

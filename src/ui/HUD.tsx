@@ -11,7 +11,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { useUpgradeStore } from '@/stores/upgradeStore';
 import { useQuestStore } from '@/stores/questStore';
 import { Minimap } from './Minimap';
-import type { IslandData } from '@/core/systems/WorldGeneration';
+import type { IslandData } from '@/core/systems/ChunkManager';
 
 interface HUDProps {
   islands: IslandData[];
