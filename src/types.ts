@@ -75,3 +75,9 @@ export interface UpgradeLevel {
   rudder: number;
   cannons: number;
 }
+
+export interface LandingPrompt {
+  kind: 'SHIP' | 'OBJECTIVE';
+  title: string;
+  description: string;
+}

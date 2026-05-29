@@ -14,12 +14,14 @@ export interface UIState {
   showGameOver: boolean;
   activePrompt: InteractionPromptType;
   targetIslandId: string | null;
+  activeMerchantId: string | null;
 
   togglePause: () => void;
   pause: () => void;
   resume: () => void;
   setDocked: (docked: boolean, islandId?: string | null) => void;
-  setPrompt: (prompt: InteractionPromptType) => void;
+  setPrompt: (prompt: InteractionPromptType, islandId?: string | null) => void;
+  setActiveMerchant: (id: string | null) => void;
   triggerGameOver: () => void;
   resetUI: () => void;
 }
@@ -30,6 +32,7 @@ export const useUIStore = create<UIState>((set) => ({
   showGameOver: false,
   activePrompt: 'NONE',
   targetIslandId: null,
+  activeMerchantId: null,
 
   togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
   pause: () => set({ isPaused: true }),
@@ -41,7 +44,10 @@ export const useUIStore = create<UIState>((set) => ({
     activePrompt: docked ? 'REPAIR' : 'NONE'
   }),
   
-  setPrompt: (prompt) => set({ activePrompt: prompt }),
+  setPrompt: (prompt, islandId = null) => set((state) => ({
+    activePrompt: prompt,
+    targetIslandId: prompt === 'NONE' ? null : islandId ?? state.targetIslandId,
+  })),
   
   triggerGameOver: () => set({ showGameOver: true, isPaused: true }),
   
@@ -51,5 +57,6 @@ export const useUIStore = create<UIState>((set) => ({
     showGameOver: false,
     activePrompt: 'NONE',
     targetIslandId: null,
+    activeMerchantId: null,
   }),
 }));
