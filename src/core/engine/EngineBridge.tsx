@@ -17,7 +17,14 @@ import { collisionSystem } from '@/core/physics/CollisionSystem';
 import { gameLifecycle } from '@/core/systems/GameLifecycle';
 import { chunkManager } from '@/core/systems/ChunkManager';
 import { questManager } from '@/core/systems/QuestManager';
-import type { IslandData } from '@/core/systems/WorldGeneration'; 
+import { islandInteractionSystem } from '@/core/systems/IslandInteractionSystem';
+import type { IslandData } from '@/core/systems/ChunkManager';
+import { projectilePhysics } from '../physics/ProjectilePhysics'
+import { enemyAI } from '@/core/systems/EnemyAI';
+import { anomalyManager } from '@/core/systems/AnomalyManager';
+import { salvageSystem } from '@/core/systems/SalvageSystem';
+import { treasureMapSystem } from '@/core/systems/TreasureMapSystem';
+import { fishingSystem } from '@/core/systems/FishingSystem';
 
 interface EngineBridgeProps {
   onLootChange?: (loot: LootEntity[]) => void;
@@ -29,6 +36,7 @@ export function EngineBridge({ onLootChange, onIslandsChange }: EngineBridgeProp
   const lastWeatherCondition = useRef('CLEAR');
   const performanceManager = useRef(new PerformanceManager());
   const lastChunkUpdate = useRef(0);
+  const activeIslandsRef = useRef<IslandData[]>([]);
 
   useEffect(() => {
     questManager.initialize();
@@ -44,11 +52,21 @@ export function EngineBridge({ onLootChange, onIslandsChange }: EngineBridgeProp
     if (lastChunkUpdate.current >= 0.5) {
       lastChunkUpdate.current = 0;
       const activeIslands = chunkManager.update(shipPos.x, shipPos.z);
+      activeIslandsRef.current = activeIslands;
       if (onIslandsChange) onIslandsChange(activeIslands);
     }
 
     // 1. Tick Weather & Time of Day
     weatherManager.update(safeDelta);
+    // 7. Tick Anomalies (Whirlpools & Kraken)
+    anomalyManager.update(safeDelta);
+    // 8. Tick Salvage System
+    salvageSystem.update(safeDelta);
+    // 9. Tick Treasure Maps
+    treasureMapSystem.update(safeDelta);
+    // 10. Tick Fishing System
+    fishingSystem.update(safeDelta);
+    
     // Trigger notification on weather change
     const currentCondition = useWeatherStore.getState().condition;
     if (currentCondition !== lastWeatherCondition.current) {
@@ -70,11 +88,9 @@ export function EngineBridge({ onLootChange, onIslandsChange }: EngineBridgeProp
     // 4. Tick Collisions & Game Lifecycle
     // We need the active islands for collision. We can read them from the store or pass them.
     // For simplicity, we'll pass the latest generated islands via a ref or just let CollisionSystem read from a global if needed.
-    // Here, we'll just use the callback approach. Let's assume onIslandsChange updates a state that CollisionSystem can access, 
-    // OR we just pass the active islands directly if we store them in a ref.
-    // To keep it pure TS, let's store active islands in ChunkManager and read them here.
-    const activeIslands = chunkManager.update(shipPos.x, shipPos.z); // Fast cache read
+    const activeIslands = activeIslandsRef.current;
     collisionSystem.update(safeDelta, activeIslands);
+    islandInteractionSystem.update(safeDelta, activeIslands);
     gameLifecycle.update();
     
     // 5. Tick Quests
@@ -88,7 +104,12 @@ export function EngineBridge({ onLootChange, onIslandsChange }: EngineBridgeProp
     const shipSpeed = Math.abs(gameWorld.shipPhysics.speed);
     const windSpeed = gameWorld.windDynamics.getWindState(time).speed;
     audioManager.updateAmbience(shipSpeed, windSpeed);
-  });
+  
+    // update projectile and enemyui
+    projectilePhysics.update(safeDelta);
+    enemyAI.update(safeDelta);
 
+  });
+  
   return null; // Renders nothing to the DOM/Canvas
 }

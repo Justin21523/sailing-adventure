@@ -22,9 +22,9 @@ export class ShipPhysics {
   public heading: number = 0; // Radians (Y-axis rotation)
 
   // Configuration constants
-  public maxSpeed: number = 15;
-  public acceleration: number = 4.0;
-  public turnSpeed: number = 1.8;
+  public maxSpeed: number = 24;
+  public acceleration: number = 6.0;
+  public turnSpeed: number = 1.0; // Lowered for gentler, more controllable steering
   public drag: number = 0.92; // Water resistance factor
   public angularDrag: number = 0.85;
 
@@ -54,7 +54,7 @@ export class ShipPhysics {
     const turnAmount = this.rudder * this.turnSpeed * speedFactor * dt;
     
     // Invert turning direction if reversing
-    this.heading += this.speed >= 0 ? turnAmount : -turnAmount;
+    this.heading -= this.speed >= 0 ? turnAmount : -turnAmount; // Sign flipped so A=left, D=right
 
     // 3. Calculate world velocity vector based on heading
     // Assuming +Z is forward in local space

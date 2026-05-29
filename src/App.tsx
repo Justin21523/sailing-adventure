@@ -15,9 +15,10 @@ import { CameraFollow } from '@/components/ship/CameraFollow';
 import { ShipTelemetry } from '@/components/ship/ShipTelemetry';
 import { HUD } from '@/ui/HUD';
 import { WakeEffect } from '@/components/effects/WakeEffect';
-import { Island } from '@/components/environment/Island';
 import { type LootEntity } from '@/core/systems/EventSystem';
 import { FloatingLoot } from '@/components/environment/FloatingLoot';
+import { OceanFlotsam } from '@/components/environment/OceanFlotsam';
+import { Wildlife } from '@/components/environment/Wildlife';
 import { PostProcessing } from '@/components/effects/PostProcessing';
 import { audioManager } from '@/core/audio/AudioManager';
 import { UpgradeShop } from '@/ui/UpgradeShop';
@@ -34,8 +35,29 @@ import { InteractionPrompt } from '@/ui/InteractionPrompt';
 import { GameOverScreen } from '@/ui/GameOverScreen';
 import { useUIStore } from '@/stores/uiStore';
 import { ExplorationPanel } from '@/ui/ExplorationPanel';
-import type { IslandData } from '@/core/systems/WorldGeneration';
-
+import { IslandObjectiveUI } from '@/ui/IslandObjectiveUI';
+import type { IslandData } from '@/core/systems/ChunkManager';
+import { EnhancedIsland } from '@/components/environment/EnhancedIsland';
+import { IslandLandingScene } from '@/components/environment/IslandLandingScene';
+import type { LandingPrompt } from '@/types';
+import  { CombatHUD } from '@/ui/CombatHUD';
+import  { CannonSystem } from '@/components/ship/CannonSystem';
+import { EnemyFleet } from '@/components/environment/EnemyFleet';
+import { CombatVFX } from '@/components/effects/CombatVFX';
+import { ProjectileRenderer } from '@/components/effects/ProjectileRenderer';
+import { TradePanel } from '@/ui/TradePanel';
+import { WhirlpoolRenderer } from '@/components/environment/Whirlpool';
+import { KrakenTentacle } from '@/components/environment/KrakenTentacle';
+import { WreckageRenderer } from '@/components/environment/Wreckage';
+import { CaptainAbilities } from '@/components/ship/CaptainAbilities';
+import { MerchantFleet } from '@/components/environment/MerchantFleet';
+import { MerchantTradePanel } from '@/ui/MerchantTradePanel';
+import { TreasureSpotRenderer } from '@/components/environment/TreasureSpot';
+import { CompassHUD } from '@/ui/CompassHUD';
+import { CrewPanel } from '@/ui/CrewPanel';
+import { ShipVisuals } from '@/components/ship/ShipVisuals';
+import { FishingVFX } from '@/components/effects/FishingVFX';
+import { FishingMinigameUI } from '@/ui/FishingMinigameUI';
 
 /**
  * Procedural Ship Placeholder.
@@ -91,6 +113,10 @@ export default function App() {
   // These are updated via EngineBridge based on the ship's position
   const [activeLoot, setActiveLoot] = useState<LootEntity[]>([]);
   const [activeIslands, setActiveIslands] = useState<IslandData[]>([]);
+  const [landingPrompt, setLandingPrompt] = useState<LandingPrompt | null>(null);
+  const isDocked = useUIStore((s) => s.isDocked);
+  const targetIslandId = useUIStore((s) => s.targetIslandId);
+  const dockedIsland = activeIslands.find((island) => island.id === targetIslandId);
   
   // Global Hotkeys & Audio Initialization
   useEffect(() => {
@@ -103,18 +129,15 @@ export default function App() {
       
       // Interaction (Dock/Undock)
       if (e.code === 'KeyE') {
-        const { activePrompt, isDocked, targetIslandId } = useUIStore.getState();
-        if (activePrompt === 'DOCK' && !isDocked) {
-          useUIStore.getState().setDocked(true, targetIslandId);
-        } else if (isDocked) {
-          useUIStore.getState().setDocked(false);
+        const { activePrompt, isDocked: docked, targetIslandId: islandId } = useUIStore.getState();
+        if (activePrompt === 'DOCK' && !docked) {
+          useUIStore.getState().setDocked(true, islandId);
         }
       }
 
       // Escape (Close Menus / Undock)
       if (e.code === 'Escape') {
         useUpgradeStore.getState().closeShop();
-        if (useUIStore.getState().isDocked) useUIStore.getState().setDocked(false);
         if (useUIStore.getState().isPaused) useUIStore.getState().resume();
       }
     };
@@ -162,23 +185,15 @@ export default function App() {
           toneMappingExposure: 1.0
         }}
       >
+        <EnemyFleet />
+        <ProjectileRenderer />
+        <CombatVFX />
+        <WreckageRenderer />
+        <TreasureSpotRenderer />
+
         <Suspense fallback={null}>
           {/* Global Lighting */}
           <ambientLight intensity={0.6} color="#B0C4DE" />
-          <directionalLight
-            castShadow
-            position={[50, 80, 30]}
-            intensity={1.8}
-            color="#FFF8DC"
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
-            shadow-camera-far={200}
-            shadow-camera-left={-40}
-            shadow-camera-right={40}
-            shadow-camera-top={40}
-            shadow-camera-bottom={-40}
-            shadow-bias={-0.0005}
-          />
 
           {/* Sky & Atmosphere */}
           <Sky 
@@ -192,56 +207,78 @@ export default function App() {
           <EnvironmentController />
           <fog attach="fog" args={['#87CEEB', 150, 1200]} />
 
-          {/* Game Entities */}
-          <OceanMesh />
-          
-          {/* Render Active Islands (determined by ChunkManager) */}
-          {activeIslands.map((island) => (
-            <group key={island.id}>
-              <Island data={island} />
-              <IslandInteractionZone data={island} />
-            </group>
-          ))}
-          
-          {/* Render Dynamic Loot */}
-          {activeLoot.map((loot) => (
-            <FloatingLoot key={loot.id} data={loot} />
-          ))}
+          {isDocked ? (
+            <IslandLandingScene island={dockedIsland} onPromptChange={setLandingPrompt} />
+          ) : (
+            <>
+              {/* Game Entities */}
+              <OceanMesh />
+              <OceanFlotsam />
+              <Wildlife />
+              <MerchantFleet />
+              
+              {/* Render Active Islands (determined by ChunkManager) */}
+              {activeIslands.map((island) => (
+                <group key={island.id}>
+                  <EnhancedIsland data={island} />
+                  <IslandInteractionZone data={island} />
+                </group>
+              ))}
+              
+              {/* Render Dynamic Loot */}
+              {activeLoot.map((loot) => (
+                <FloatingLoot key={loot.id} data={loot} />
+              ))}
 
-          <ShipController ref={shipRef}>
-            <ShipPlaceholder />
-          </ShipController>
+              <ShipController ref={shipRef}>
+                <ShipVisuals />
+                <FishingVFX />
+                <CannonSystem />
+                <CaptainAbilities />
+              </ShipController>
 
-          {/* VFX at scene root — world-space coords must not inherit ship group transform */}
-          <WakeEffect />
-          <ShipDamageVFX />
+              {/* VFX at scene root — world-space coords must not inherit ship group transform */}
+              <WakeEffect />
+              <ShipDamageVFX />
 
-          {/* Third-person camera following the ship */}
-          <CameraFollow target={shipRef} />
-          <CameraShake />
-          {/* Telemetry Bridge: Syncs physics to UI stores safely */}
-          <ShipTelemetry />
+              {/* Third-person camera following the ship */}
+              <CameraFollow target={shipRef} />
+              <CameraShake />
+              {/* Telemetry Bridge: Syncs physics to UI stores safely */}
+              <ShipTelemetry />
+            </>
+          )}
           
           {/* Master Ticker for all Pure TS Systems: Manages weather, loot, chunking, and physics sync */}
           <EngineBridge 
             onLootChange={setActiveLoot} 
             onIslandsChange={setActiveIslands}
           />
-          
+
+          <WhirlpoolRenderer />
+          <KrakenTentacle />
           {/* Cinematic Camera Effects */}
           <PostProcessing />
         </Suspense>
       </Canvas>
-      
+
       {/* React UI Layer: Positioned absolutely over the Canvas */}
-      <HUD islands={activeIslands} />
-      <UpgradeShop />
-      <ExplorationPanel />
-      <MobileControls />
+      {!isDocked && <HUD islands={activeIslands}/>}
+      {!isDocked && <UpgradeShop />}
+      {isDocked && <ExplorationPanel islands={activeIslands} prompt={landingPrompt} />}
+      {isDocked && <TradePanel />}
+      {!isDocked && <MerchantTradePanel />}
+      {!isDocked && <MobileControls />}
       <NotificationToast />
-      <InteractionPrompt />
+      {!isDocked && <InteractionPrompt />}
+      {!isDocked && <IslandObjectiveUI />}
       <PauseMenu />
       <GameOverScreen />
+      <CombatHUD/>
+      <TradePanel/>
+      <CompassHUD />
+      <CrewPanel />
+      <FishingMinigameUI />
     </div>
   );
 }

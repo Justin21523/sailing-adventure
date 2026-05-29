@@ -9,7 +9,7 @@ import { gameWorld } from '@/core/engine/GameWorld';
 import { useShipStore } from '@/stores/shipStore';
 import { notificationSystem } from '@/core/systems/NotificationSystem';
 import { cameraShakeState } from '@/components/effects/CameraShake';
-import type { IslandData } from '@/core/systems/WorldGeneration';
+import type { IslandData } from '@/core/systems/ChunkManager';
 
 export class CollisionSystem {
   private collisionCooldown = 0;

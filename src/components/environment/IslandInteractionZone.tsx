@@ -10,7 +10,7 @@ import { useFrame } from '@react-three/fiber';
 import { gameWorld } from '@/core/engine/GameWorld';
 import { useUIStore } from '@/stores/uiStore';
 import { useShipStore } from '@/stores/shipStore';
-import type { IslandData } from '@/core/systems/WorldGeneration';
+import type { IslandData } from '@/core/systems/ChunkManager';
 
 interface IslandInteractionZoneProps {
   data: IslandData;
@@ -39,7 +39,7 @@ export function IslandInteractionZone({ data }: IslandInteractionZoneProps) {
     // 1. Handle Prompt Display (Show "Press E to Dock" if close and slow)
     if (isInZone && isSlowEnough && !isDocked) {
       if (!lastPromptState.current) {
-        useUIStore.getState().setPrompt('DOCK');
+        useUIStore.getState().setPrompt('DOCK', data.id);
         lastPromptState.current = true;
       }
     } else if (lastPromptState.current && !isDocked) {

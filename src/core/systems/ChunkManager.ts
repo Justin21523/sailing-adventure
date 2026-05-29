@@ -1,11 +1,24 @@
-/**
+ /**
  * ChunkManager.ts
  * Infinite procedural world generation using a Chunk-based system.
  * Dynamically loads and unloads islands based on the player's current position.
  * Uses seeded pseudo-random numbers to ensure the world is consistent (deterministic).
  */
 
-import type { IslandData } from './WorldGeneration';
+
+import type { Vector3Tuple } from '@/types';
+
+export type IslandBiome = 'FOREST' | 'VOLCANIC' | 'RUINS' | 'SAND_BANK';
+
+export interface IslandData {
+  id: string;
+  position: Vector3Tuple;
+  scale: number;
+  seed: number;
+  biome: IslandBiome;
+  hasLighthouse: boolean;
+  hasRuins: boolean;
+}
 
 // Simple seeded PRNG (Mulberry32) for deterministic chunk generation
 function mulberry32(a: number) {
@@ -89,11 +102,21 @@ export class ChunkManager {
       const worldX = cx * this.chunkSize + localX;
       const worldZ = cz * this.chunkSize + localZ;
 
+      // Determine Biome based on noise-like distribution
+      const biomeRoll = rand();
+      let biome: IslandBiome = 'FOREST';
+      if (biomeRoll > 0.85) biome = 'VOLCANIC';
+      else if (biomeRoll > 0.65) biome = 'RUINS';
+      else if (biomeRoll < 0.15) biome = 'SAND_BANK';
+
       islands.push({
         id: `island_${cx}_${cz}_${i}`,
         position: [worldX, 0, worldZ],
-        scale: 0.8 + rand() * 1.5,
+        scale: 0.8 + rand() * 1.8,
         seed: Math.floor(rand() * 100000),
+        biome,
+        hasLighthouse: biome === 'SAND_BANK' && rand() > 0.5,
+        hasRuins: biome === 'RUINS',
       });
     }
 

@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { useWeatherStore } from '@/stores/weatherStore';
 import { DynamicSky } from './DynamicSky';
 import { RainSystem } from '../effects/RainSystem';
+import { CelestialSystem } from './CelestialSystem';
 
 export function EnvironmentController() {
   const { scene } = useThree();
@@ -87,6 +88,7 @@ export function EnvironmentController() {
     <>
       <DynamicSky />
       <RainSystem />
+      <CelestialSystem />
     </>
   );
 }
